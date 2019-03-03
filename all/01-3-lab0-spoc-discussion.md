@@ -17,14 +17,19 @@
 ## 思考题
 
 - 你理解的对于类似ucore这样需要进程/虚存/文件系统的操作系统，在硬件设计上至少需要有哪些直接的支持？至少应该提供哪些功能的特权指令？
+进程：需要时钟，提供时钟中断指令；
+虚存：需要MMU，提供地址转换的功能以及相关指令；
+文件系统：需要硬盘等存储介质，提供IO相关的指令。
 
 - 你理解的x86的实模式和保护模式有什么区别？物理地址、线性地址、逻辑地址的含义分别是什么？
-
+实模式只能访问1m的内存空间，保护模式有32位地址，可以访问4GB内存空间；实模式的地址是真实地址，所有程序不加区分，保护模式将内核与用户程序分开，这样访问的都是虚拟地址，需要转化为实地址且不会引起冲突。
+物理地址是真实的、硬件层面的地址；逻辑地址是程序直接访问的地址；线性地址是中间层，逻辑地址经过段机制形成线性地址、再根据页表转换成物理地址。
 - 你理解的risc-v的特权模式有什么区别？不同 模式在地址访问方面有何特征？
 
 - 理解ucore中list_entry双向链表数据结构及其4个基本操作函数和ucore中一些基于它的代码实现（此题不用填写内容）
 
 - 对于如下的代码段，请说明":"后面的数字是什么含义
+表示bit位宽。
 ```
  /* Gate descriptors for interrupts and traps */
  struct gatedesc {
@@ -62,18 +67,34 @@ intr=8;
 SETGATE(intr, 1,2,3,0);
 ```
 请问执行上述指令后， intr的值是多少？
+0x20003
 
 ### 课堂实践练习
 
 #### 练习一
 
 1. 请在ucore中找一段你认为难度适当的AT&T格式X86汇编代码，尝试解释其含义。
+    xorw %ax, %ax                                   # Segment number zero
+    movw %ax, %ds                                   # -> Data Segment
+    movw %ax, %es                                   # -> Extra Segment
+    movw %ax, %ss                                   # -> Stack Segment
+    这是bootloader启动的第一段，第一个亦或操作用于生成0。紧接着将0赋值给代表不同的段用于初始化。
+    protcseg:
+    # Set up the protected-mode data segment registers
+    movw $PROT_MODE_DSEG, %ax                       # Our data segment selector
+    movw %ax, %ds                                   # -> DS: Data Segment
+    movw %ax, %es                                   # -> ES: Extra Segment
+    movw %ax, %fs                                   # -> FS
+    movw %ax, %gs                                   # -> GS
+    movw %ax, %ss                                   # -> SS: Stack Segment
+    这里将代码段的segment selector赋值给寄存器，用于找到相应的段。
 
 2. (option)请在rcore中找一段你认为难度适当的RV汇编代码，尝试解释其含义。
 
 #### 练习二
 
 宏定义和引用在内核代码中很常用。请枚举ucore或rcore中宏定义的用途，并举例描述其含义。
+#define IO_PIC1 0x20 是IO中主线中断控制的地址。 
 
 #### reference
  - [Intel格式和AT&T格式汇编区别](http://www.cnblogs.com/hdk1993/p/4820353.html)
